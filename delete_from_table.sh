@@ -1,5 +1,5 @@
 #!/bin/bash
-elete_from_table(){
+delete_from_table(){
     table_loc="./databases"
     echo "Enter the table name please: "
     read table_name
@@ -15,7 +15,7 @@ elete_from_table(){
             mv temp.txt "$folder_path"
             echo "Record with primary key '$pk' has been deleted."
         else
-            echo "Do you want to display a full column (y/n): "
+            echo "Do you want to delete a full column (y/n): "
             read choice
             if [ "$choice" = "n" ]; then
                 echo "Enter the column name: "
@@ -26,10 +26,13 @@ elete_from_table(){
                     edu) column_number=3;;
                     *) echo "Invalid column name, please enter a valid name"; exit 1 ;;
                 esac
-                awk -v col="$column_number" '{print $col}' "$folder_path"
+                awk -v col="$column_number" '{ $col=""; $1=$1; print }' "$folder_path" > temp_file
+                mv temp_file "$folder_path"
+                echo "Column '$column_name' has been deleted."
             else
-                echo "The '$table_name' does not exist, please enter a valid table name."
+                echo "Operation cancelled."
             fi
+
         fi
     fi
 }
