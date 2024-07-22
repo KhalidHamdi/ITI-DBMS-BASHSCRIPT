@@ -12,11 +12,11 @@ main_menu() {
         read -p "Please select an option: " menu_option
 
         case $menu_option in
-            1) source create_db.sh ;;
-            2) source list_dbs.sh ;;
-            3) source connect_to_database.sh ;;
-            4) source drop_db.sh ;;
-            5) echo "Exiting..."; break ;;
+            1) clear ; . ./create_db.sh ;;
+            2) clear ; . ./list_dbs.sh  ;;
+            3) clear ; . ./connect_to_database.sh  ;;
+            4) clear ; . ./drop_db.sh ;;
+            5) echo "Exiting..."; exit ;;
             *) echo "Invalid option. Please select a valid option." ;;
         esac
     done
