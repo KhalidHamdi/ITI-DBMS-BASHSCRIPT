@@ -1,3 +1,4 @@
+create_table.sh
 #!/bin/bash
 
 create_table() {
@@ -74,26 +75,23 @@ create_table() {
                 echo "Column name must start with a letter. Please try again or type 'exit' to cancel."
             elif [[ ! "$column_name" =~ ^[a-zA-Z0-9_]+$ ]]; then
                 echo "Column name contains invalid characters. Only letters, numbers, and underscores are allowed. Please try again or type 'exit' to cancel."
+            elif [[ " ${column_names[@]} " =~ " $column_name " ]]; then
+                echo "Column name '$column_name' already exists. Please choose a different name."
             else
+                column_names+=("$column_name")
                 break
             fi
         done
 
         while true; do
-            if [[ "$column_name" =~ id$ ]]; then
-                echo "Column name is 'id', setting column type to 'integer'."
-                column_type="integer"
-                break
+            read -p "Enter column $i type (integer/string, or type 'exit' to cancel): " column_type
+            if [[ "$column_type" == "exit" ]]; then
+                echo "Operation canceled."
+                exit
+            elif [[ "$column_type" != "integer" && "$column_type" != "string" ]]; then
+                echo "Invalid column type. Please enter 'integer' or 'string' or type 'exit' to cancel."
             else
-                read -p "Enter column $i type (integer/string, or type 'exit' to cancel): " column_type
-                if [[ "$column_type" == "exit" ]]; then
-                    echo "Operation canceled."
-                    exit
-                elif [[ "$column_type" != "integer" && "$column_type" != "string" ]]; then
-                    echo "Invalid column type. Please enter 'integer' or 'string' or type 'exit' to cancel."
-                else
-                    break
-                fi
+                break
             fi
         done
 
