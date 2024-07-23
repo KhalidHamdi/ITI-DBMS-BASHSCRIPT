@@ -5,16 +5,16 @@ echo 'Enter the primary key for the record you want to display.'
 echo -n 'The PK: '
 read pk
 
-raw=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1,$ 2, $3}' input.txt)
+row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1,$ 2, $3}' input.txt)
 
-# echo "The Record: $fieldnumber"
+
 flag=0
 while [ $flag -eq 0 ];do
-        if [ -z "$raw" ];then
+        if [ -z "$row" ];then
                 echo "Primary key Not found"
         echo -n "please enter a valid primary key: "
                 read pk
-                raw=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
+                row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
 
         else
             flag=1
@@ -22,8 +22,8 @@ while [ $flag -eq 0 ];do
             echo "Do you want to select by column or by raw: "
             read select_type
             if [ "$select_type" = "raw" ]; then
-                raw=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
-                echo "The Record(s) is: $raw"
+                row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
+                echo "The Record(s) is: $row"
 
                 
 
@@ -58,8 +58,3 @@ while [ $flag -eq 0 ];do
         fi 
 done
 
-
-
-
-                
-            
