@@ -7,7 +7,11 @@ create_database() {
         read -p "Please enter database name (or type 'exit' to quit): " db_name
         if [[ "$db_name" == "exit" ]]; then
             echo "Exiting the database creation process."
-            break
+            echo "Press any key to go to the main menu..."
+            read -n 1 -s 
+            clear
+            . ./mainMenu.sh        
+            return
         fi
 
         if [[ -z "$db_name" ]]; then
@@ -31,8 +35,13 @@ create_database() {
         else 
             mkdir -p "$db_path/$db_name"
             echo "Successfully created database: '$db_name'."
+            export DB_NAME="$db_name"
             break
         fi
     done
+    echo "Press any key to go to the main menu..."
+    read -n 1 -s 
+    clear
+    . ./mainMenu.sh
 }
 create_database
