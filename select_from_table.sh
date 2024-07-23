@@ -1,60 +1,109 @@
 #!/bin/bash
 
+select_from_table() {
+    while true; do
+        echo 'Enter the table name to select from (or type "exit" to cancel):'
+        echo -n 'Table name: '
+        read table_name
 
-echo 'Enter the primary key for the record you want to display.'
-echo -n 'The PK: '
-read pk
+        if [[ "$table_name" == "exit" ]]; then
+            echo "Operation canceled."
+            echo "Press any key to go to the tables menu..."
+            read -n 1 -s  
+            clear
+            . ./tables_menu.sh 
+            exit 0
+        fi
 
-row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1,$ 2, $3}' input.txt)
+        if [[ -z "$table_name" ]]; then
+            echo "Table name cannot be null. Please try again or type 'exit' to cancel."
+            continue
+        fi
 
-
-flag=0
-while [ $flag -eq 0 ];do
-        if [ -z "$row" ];then
-                echo "Primary key Not found"
-        echo -n "please enter a valid primary key: "
-                read pk
-                row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
-
+        table_path="$CURRENT_DB/$table_name"
+        if [[ ! -d "$table_path" ]]; then
+            echo "Table '$table_name' does not exist. Please try again."
         else
-            flag=1
+            break
+        fi
+    done
 
-            echo "Do you want to select by column or by raw: "
-            read select_type
-            if [ "$select_type" = "raw" ]; then
-                row=$(awk -F ' ' -v pk="$pk" '$2 == pk {print $1, $2, $3}' input.txt)
-                echo "The Record(s) is: $row"
+    metadata_file="$table_path/metadata.txt"
+    data_file="$table_path/data.txt"
 
-                
+    if [[ ! -f "$metadata_file" ]]; then
+        echo "Metadata file does not exist for table '$table_name'."
+        exit 1
+    fi
 
-            else 
-                echo "Do you want to display the full column(y/n): "
-                read choice
-                if [ "$choice" = "y" ]; then
-                   echo "Enter the column name: "
-                   read column_name
-                   case "$column_name" in
-                        name) column_number=1;;
-                        age) column_number=2;;
-                        edu) column_number=3;;
-                        *) echo "Inavlid column name, please enter a valid name"
-                   esac
-                   awk -v col="$column_number" '{print $col}' input.txt
+    column_order=()
+    while IFS=: read -r col_name _; do
+        column_order+=("$col_name")
+    done < "$metadata_file"
 
-                else 
-                     echo "Enter the column name: "
-                   read column_name
-                   case "$column_name" in
-                        name) column_number=1;;
-                        age) column_number=2;;
-                        edu) column_number=3;;
-                        *) echo "Inavlid column name, please enter a valid name"
-                   esac
-                   field=$(awk -F ' ' -v pk="$pk" -v col="$column_number" '$2 == pk {print $col}' input.txt)
-                   echo "The field value is: $field"
+    while true; do
+        echo "Select an option:"
+        echo "1. Select by raw (primary key)"
+        echo "2. Select by column"
+        echo "3. Select all"
+        read -p "Enter your choice: " choice
+
+        case $choice in
+            1)
+                echo 'Enter the primary key for the record you want to display.'
+                echo -n 'The PK: '
+                read pk
+
+                row=$(awk -F ':' -v pk="$pk" '$1 == pk {print}' "$data_file")
+
+                if [ -z "$row" ]; then
+                    echo "Primary key '$pk' not found in table '$table_name'. Please try again."
+                else
+                    clear
+                    echo "The record(s) with primary key '$pk' is/are:"
+                    echo "$row"
                 fi
-             
-            fi
-        fi 
-done
+                break
+                ;;
 
+            2)
+                echo "Enter the column name (${column_order[*]}):"
+                read column_name
+
+                column_number=$(grep -n "^$column_name:" "$metadata_file" | cut -d: -f1)
+                if [ -z "$column_number" ]; then
+                    echo "Invalid column name '$column_name'. Please enter a valid name."
+                else
+                    column_number=$((column_number))
+                    clear
+                    echo "Displaying data from column '$column_name':"
+                    awk -F ':' -v col="$column_number" '{print $col}' "$data_file"
+                fi
+                break
+                ;;
+
+            3)
+                clear
+                echo -e "\nAll data in table '$table_name':"
+                if [ -s "$data_file" ]; then
+                    cat "$data_file" | column -t -s ":"
+                else
+                    clear
+                    echo "No data available in table '$table_name'."
+                fi
+                break
+                ;;
+
+            *)
+                echo "Invalid choice '$choice'. Please enter '1', '2', or '3'."
+                ;;
+        esac
+    done
+
+    echo "Press any key to go to the tables menu..."
+    read -n 1 -s
+    clear
+    . ./tables_menu.sh
+    exit 0
+}
+select_from_table
