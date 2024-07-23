@@ -1,4 +1,3 @@
-create_table.sh
 #!/bin/bash
 
 create_table() {
