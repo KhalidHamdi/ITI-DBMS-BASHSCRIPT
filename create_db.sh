@@ -4,7 +4,7 @@ create_database() {
     db_path="./databases"
     while true; 
     do
-        read -p "Please enter database name (or type 'exit' to quit): " db_name
+        read -r -p "Please enter database name (or type 'exit' to quit): " db_name
         if [[ "$db_name" == "exit" ]]; then
             echo "Exiting the database creation process."
             echo "Press any key to go to the main menu..."

@@ -13,7 +13,7 @@ tables_menu() {
         echo "7. Update Table"
         echo "8. Back to Main Menu"
 
-        read -p "Please select an option: " db_menu_option
+        read -r -p "Please select an option: " db_menu_option
 
         case $db_menu_option in
             1)clear; . ./create_table.sh ;;

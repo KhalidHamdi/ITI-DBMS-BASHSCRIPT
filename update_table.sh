@@ -1,7 +1,8 @@
 #!/bin/bash
+
 update_table() {
     while true; do
-        read -p "Enter table name (or type 'exit' to cancel): " table_name
+        read -r -p "Enter table name (or type 'exit' to cancel): " table_name
         if [[ "$table_name" == "exit" ]]; then
             clear
             echo "Operation canceled."
@@ -26,8 +27,7 @@ update_table() {
     fi
 
     while true; do
-        echo "Enter the primary key value of the row you want to update (or type 'exit' to cancel):"
-        read pk
+        read -r -p "Enter the primary key value of the row you want to update (or type 'exit' to cancel): " pk
         if [[ "$pk" == "exit" ]]; then
             clear
             echo "Operation canceled."
@@ -57,11 +57,31 @@ update_table() {
             current_val="${fields[$i]}"
 
             while true; do
-                read -p "Set value for column '$col_name' (current: $current_val, enter to keep): " new_val
+                read -r -p "Set value for column '$col_name' (current: $current_val, enter to keep): " new_val
 
                 if [ -z "$new_val" ]; then
                     new_val="$current_val"
                     break
+                fi
+
+                if [[ "$col_name" == "${column_order[0]}" ]]; then
+                    if [[ "$new_val" != "$current_val" ]]; then
+                        is_duplicate=false
+                        if [[ -s "$data_path" ]]; then
+                            while IFS= read -r line; do
+                                pk_value=$(echo "$line" | cut -d':' -f1)
+                                if [[ "$new_val" == "$pk_value" ]]; then
+                                    echo "Duplicate entry for primary key $col_name. Please enter a new value."
+                                    is_duplicate=true
+                                    break
+                                fi
+                            done < "$data_path"
+                        fi
+
+                        if $is_duplicate; then
+                            continue
+                        fi
+                    fi
                 fi
 
                 case "$col_type" in
@@ -90,12 +110,15 @@ update_table() {
 
         updated_row=$(IFS=:; echo "${fields[*]}")
 
-        sed -i "/^$pk:/d" "$data_path"
-        echo "$updated_row" >> "$data_path"
+        temp_file=$(mktemp)
+        awk -F ':' -v pk="$pk" '$1 != pk' "$data_path" > "$temp_file"
+        echo "$updated_row" >> "$temp_file"
+        mv "$temp_file" "$data_path"
+
         clear
         echo "Row updated successfully."
         echo "Updated data in $table_name:"
-        awk -F ':' -v pk="$pk" '$1 == pk {print}' "$data_path"
+        awk -F ':' -v pk="${fields[0]}" '$1 == pk {print}' "$data_path"
         echo "Press any key to go to the tables menu..."
         read -n 1 -s
         clear

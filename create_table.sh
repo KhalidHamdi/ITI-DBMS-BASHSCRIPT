@@ -1,14 +1,21 @@
 #!/bin/bash
 
 create_table() {
+    table_name=""
+    num_columns=0
+    column_names=()
+    column_types=()
+    pk_column_num=-1
+
     while true; do
-        read -p "Enter the name of the table you want to add to database '$DB_NAME' (or type 'exit' to cancel): " table_name
+        read -r -p "Enter the name of the table you want to add to database '$DB_NAME' (or type 'exit' to cancel): " table_name
         if [[ "$table_name" == "exit" ]]; then
             echo "Operation canceled."
             echo "Press any key to go to the tables menu..."
             read -n 1 -s 
             clear
             . ./tables_menu.sh
+            return
         elif [[ -z "$table_name" ]]; then
             echo "Table name cannot be null. Please try again or type 'exit' to cancel."
         elif [[ ! "$table_name" =~ ^[a-zA-Z] ]]; then
@@ -20,40 +27,48 @@ create_table() {
         fi
     done
 
-    if [ -d "$table_name" ]; then
+    if [ -d "$CURRENT_DB/$table_name" ]; then
         echo "Table '$table_name' already exists. Please choose a different name."
-        exit 1
-    else
-        while true; do
-            read -p "Enter number of columns (or type 'exit' to cancel): " num_columns
-            if [[ "$num_columns" == "exit" ]]; then
-                echo "Operation canceled."
-                exit
-            elif [[ -z "$num_columns" ]]; then
-                echo "Number of columns cannot be null. Please try again or type 'exit' to cancel."
-            elif ! [[ "$num_columns" =~ ^[0-9]+$ ]]; then
-                echo "Number of columns must be a valid integer. Please try again or type 'exit' to cancel."
-            else
-                break
-            fi
-        done
-        mkdir -p "$CURRENT_DB/$table_name"
-        metadata_file="$CURRENT_DB/$table_name/metadata.txt"
-        data_file="$CURRENT_DB/$table_name/data.txt"
-        touch "$metadata_file"
-        touch "$data_file"
+        echo "Press any key to go to the tables menu..."
+        read -n 1 -s 
+        clear
+        . ./tables_menu.sh
+        return
     fi
+
+    while true; do
+        read -r -p "Enter number of columns (or type 'exit' to cancel): " num_columns
+        if [[ "$num_columns" == "exit" ]]; then
+            echo "Operation canceled."
+            echo "Press any key to go to the tables menu..."
+            read -n 1 -s 
+            clear
+            . ./tables_menu.sh
+            return
+        elif [[ -z "$num_columns" ]]; then
+            echo "Number of columns cannot be null. Please try again or type 'exit' to cancel."
+        elif ! [[ "$num_columns" =~ ^[0-9]+$ ]]; then
+            echo "Number of columns must be a valid integer. Please try again or type 'exit' to cancel."
+        elif (( num_columns <= 0 )); then
+            echo "Number of columns must be greater than zero. Please try again or type 'exit' to cancel."
+        else
+            break
+        fi
+    done
 
     if [[ "$num_columns" -eq 1 ]]; then
         pk_column_num=1
         echo "Since only one column is specified, it will be set as the primary key by default."
-        primary_key_column=""
     else
         while true; do
-            read -p "Which column is the primary key? Enter column number (1 to $num_columns, or type 'exit' to cancel): " pk_column_num
+            read -r -p "Which column is the primary key? Enter column number (1 to $num_columns, or type 'exit' to cancel): " pk_column_num
             if [[ "$pk_column_num" == "exit" ]]; then
                 echo "Operation canceled."
-                exit
+                echo "Press any key to go to the tables menu..."
+                read -n 1 -s 
+                clear
+                . ./tables_menu.sh
+                return
             elif ! [[ "$pk_column_num" =~ ^[0-9]+$ ]] || (( pk_column_num < 1 || pk_column_num > num_columns )); then
                 echo "Invalid column number. Please enter a number between 1 and $num_columns or type 'exit' to cancel."
             else
@@ -64,10 +79,14 @@ create_table() {
 
     for (( i=1; i<=num_columns; i++ )); do
         while true; do
-            read -p "Enter column $i name (or type 'exit' to cancel): " column_name
+            read -r -p "Enter column $i name (or type 'exit' to cancel): " column_name
             if [[ "$column_name" == "exit" ]]; then
                 echo "Operation canceled."
-                exit
+                echo "Press any key to go to the tables menu..."
+                read -n 1 -s 
+                clear
+                . ./tables_menu.sh
+                return
             elif [[ -z "$column_name" ]]; then
                 echo "Column name cannot be null. Please try again or type 'exit' to cancel."
             elif [[ ! "$column_name" =~ ^[a-zA-Z] ]]; then
@@ -83,10 +102,14 @@ create_table() {
         done
 
         while true; do
-            read -p "Enter column $i type (integer/string, or type 'exit' to cancel): " column_type
+            read -r -p "Enter column $i type (integer/string, or type 'exit' to cancel): " column_type
             if [[ "$column_type" == "exit" ]]; then
                 echo "Operation canceled."
-                exit
+                echo "Press any key to go to the tables menu..."
+                read -n 1 -s 
+                clear
+                . ./tables_menu.sh
+                return
             elif [[ "$column_type" != "integer" && "$column_type" != "string" ]]; then
                 echo "Invalid column type. Please enter 'integer' or 'string' or type 'exit' to cancel."
             else
@@ -94,6 +117,18 @@ create_table() {
             fi
         done
 
+        column_types+=("$column_type")
+    done
+
+    mkdir -p "$CURRENT_DB/$table_name"
+    metadata_file="$CURRENT_DB/$table_name/metadata.txt"
+    data_file="$CURRENT_DB/$table_name/data.txt"
+    touch "$metadata_file"
+    touch "$data_file"
+
+    for (( i=1; i<=num_columns; i++ )); do
+        column_name=${column_names[$i-1]}
+        column_type=${column_types[$i-1]}
         if (( i == pk_column_num )); then
             is_primary_key="y"
             primary_key_column="$column_name"
@@ -102,10 +137,12 @@ create_table() {
         fi
         echo "${column_name}:${column_type}:${is_primary_key}" >> "$metadata_file"
     done
+
     echo "Table '$table_name' created successfully."
     echo "Press any key to go to the tables menu..."
     read -n 1 -s 
     clear
     . ./tables_menu.sh
 }
+
 create_table

@@ -2,25 +2,19 @@
 
 select_from_table() {
     while true; do
-        echo 'Enter the table name to select from (or type "exit" to cancel):'
-        echo -n 'Table name: '
-        read table_name
+        read -r -p 'Enter the table name to select from (or type "exit" to cancel): ' table_name
 
         if [[ "$table_name" == "exit" ]]; then
             echo "Operation canceled."
             echo "Press any key to go to the tables menu..."
             read -n 1 -s  
             clear
-            . ./tables_menu.sh 
-            exit 0
-        fi
-
-        if [[ -z "$table_name" ]]; then
-            echo "Table name cannot be null. Please try again or type 'exit' to cancel."
-            continue
+            . ./tables_menu.sh
+            return
         fi
 
         table_path="$CURRENT_DB/$table_name"
+
         if [[ ! -d "$table_path" ]]; then
             echo "Table '$table_name' does not exist. Please try again."
         else
@@ -33,7 +27,12 @@ select_from_table() {
 
     if [[ ! -f "$metadata_file" ]]; then
         echo "Metadata file does not exist for table '$table_name'."
-        exit 1
+        echo "Please check the table name and try again."
+        echo "Press any key to go back to the tables menu..."
+        read -n 1 -s
+        clear
+        . ./tables_menu.sh
+        return
     fi
 
     column_order=()
@@ -43,16 +42,15 @@ select_from_table() {
 
     while true; do
         echo "Select an option:"
-        echo "1. Select by raw (primary key)"
+        echo "1. Select by primary key"
         echo "2. Select by column"
         echo "3. Select all"
-        read -p "Enter your choice: " choice
+        read -r -p "Enter your choice: " choice
 
         case $choice in
             1)
-                echo 'Enter the primary key for the record you want to display.'
-                echo -n 'The PK: '
-                read pk
+                echo 'Enter the primary key for the record you want to display:'
+                read -r -p pk
 
                 row=$(awk -F ':' -v pk="$pk" '$1 == pk {print}' "$data_file")
 
@@ -68,16 +66,15 @@ select_from_table() {
 
             2)
                 echo "Enter the column name (${column_order[*]}):"
-                read column_name
+                read -r -p column_name
 
-                column_number=$(grep -n "^$column_name:" "$metadata_file" | cut -d: -f1)
-                if [ -z "$column_number" ]; then
+                column_index=$(awk -F ':' -v col="$column_name" '$1 == col {print NR}' "$metadata_file")
+                if [[ -z "$column_index" ]]; then
                     echo "Invalid column name '$column_name'. Please enter a valid name."
                 else
-                    column_number=$((column_number))
                     clear
                     echo "Displaying data from column '$column_name':"
-                    awk -F ':' -v col="$column_number" '{print $col}' "$data_file"
+                    awk -F ':' -v col="$column_index" '{print $col}' "$data_file"
                 fi
                 break
                 ;;
@@ -88,7 +85,6 @@ select_from_table() {
                 if [ -s "$data_file" ]; then
                     cat "$data_file" | column -t -s ":"
                 else
-                    clear
                     echo "No data available in table '$table_name'."
                 fi
                 break
@@ -104,6 +100,6 @@ select_from_table() {
     read -n 1 -s
     clear
     . ./tables_menu.sh
-    exit 0
 }
+
 select_from_table

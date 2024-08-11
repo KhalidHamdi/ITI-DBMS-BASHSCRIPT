@@ -9,7 +9,7 @@ main_menu() {
         echo "4. Drop Database"
         echo "5. Exit"
 
-        read -p "Please select an option: " menu_option
+        read -r -p "Please select an option: " menu_option
 
         case $menu_option in
             1) clear ; . ./create_db.sh ;;
