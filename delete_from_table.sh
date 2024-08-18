@@ -142,7 +142,7 @@ delete_from_table() {
                 mv temp_file "$metadata_path"
 
                 clear
-                echo "Column '$column_name' has been deleted from both data and metadata files."
+                echo "Column '$column_name' has been deleted"
                 read -n 1 -s -r -p "Press any key to go back..."
                 clear
                 break
