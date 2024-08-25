@@ -47,7 +47,7 @@ delete_from_table() {
         echo "1. Delete by primary key"
         echo "2. Delete by full column"
         echo "3. Return to tables menu"
-        read -r -p "Enter your choice: " -n 1 -s option
+        read -r -p "Enter your choice (1, 2, or 3): " option
         clear
 
         case $option in
@@ -70,16 +70,22 @@ delete_from_table() {
                         pk_column_num=$(awk -F ':' '$3 == "y" {print NR; exit}' "$metadata_path")
 
                         if [ -z "$pk_column_num" ]; then
-                            echo "Primary key column not found in metadata. Operation cannot proceed."
+                            echo "Primary key column not found. Operation cannot proceed."
                             read -n 1 -s -r -p "Press any key to go back..."
                             clear
                             continue
                         fi
 
-                        awk -v pk="$pk" -v pk_col="$pk_column_num" -F ':' '$pk_col != pk' "$data_path" > temp.txt
-                        mv temp.txt "$data_path"
-                        clear
-                        echo "Record with primary key '$pk' has been deleted."
+                        awk -v pk="$pk" -F ':' '$1 != pk' "$data_path" > temp.txt
+
+                        if [ -f temp.txt ]; then
+                            mv temp.txt "$data_path"
+                            clear
+                            echo "Record with primary key '$pk' has been deleted."
+                        else
+                            echo "Error occurred during deletion."
+                        fi
+
                         read -n 1 -s -r -p "Press any key to go back..."
                         clear
                         break
@@ -115,7 +121,7 @@ delete_from_table() {
                 pk_column_number=$(awk -F ':' '$3 == "y" {print NR}' "$metadata_path")
 
                 if [ "$column_number" -eq "$pk_column_number" ]; then
-                    read -r -p "Warning: The column you are about to delete is the primary key column. This will remove the primary key constraint and may affect data integrity. Are you sure you want to proceed? (y/n) " -n 1 -s confirm
+                    read -r -p "Warning: The column you are about to delete is the primary key column. This will remove the primary key constraint and may affect data integrity. Are you sure you want to proceed? (y/n) " confirm
                     clear
 
                     if [ "$confirm" != "y" ]; then
@@ -136,13 +142,25 @@ delete_from_table() {
                     }
                     printf "\n";
                 }' "$data_path" > temp_file
-                mv temp_file "$data_path"
+
+                if [ -f temp_file ]; then
+                    mv temp_file "$data_path"
+                else
+                    echo "Error while processing column deletion."
+                    read -n 1 -s -r -p "Press any key to go back..."
+                    continue
+                fi
 
                 awk -F ':' -v col_name="$column_name" '$1 != col_name' "$metadata_path" > temp_file
-                mv temp_file "$metadata_path"
 
-                clear
-                echo "Column '$column_name' has been deleted from both data and metadata files."
+                if [ -f temp_file ]; then
+                    mv temp_file "$metadata_path"
+                    clear
+                    echo "Column '$column_name' has been deleted."
+                else
+                    echo "Error while processing metadata deletion."
+                fi
+
                 read -n 1 -s -r -p "Press any key to go back..."
                 clear
                 break

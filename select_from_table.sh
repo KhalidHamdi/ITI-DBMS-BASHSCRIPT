@@ -15,7 +15,7 @@ select_from_table() {
 
         table_path="$CURRENT_DB/$table_name"
 
-        if [[ ! -d "$table_path" ]]; then
+        if [[ ! -f "$table_path/data.txt" ]]; then
             echo "Table '$table_name' does not exist. Please try again."
         else
             break
@@ -49,8 +49,7 @@ select_from_table() {
 
         case $choice in
             1)
-                echo 'Enter the primary key for the record you want to display:'
-                read -r -p pk
+                read -r -p 'Enter the primary key for the record you want to display: ' pk
 
                 row=$(awk -F ':' -v pk="$pk" '$1 == pk {print}' "$data_file")
 
@@ -65,16 +64,15 @@ select_from_table() {
                 ;;
 
             2)
-                echo "Enter the column name (${column_order[*]}):"
-                read -r -p column_name
+                read -r -p "Enter the column name (${column_order[*]}): " column_name
 
-                column_index=$(awk -F ':' -v col="$column_name" '$1 == col {print NR}' "$metadata_file")
+                column_index=$(awk -F ':' -v col="$column_name" 'BEGIN {i=0} $1 == col {print i; exit} {i++}' "$metadata_file")
                 if [[ -z "$column_index" ]]; then
                     echo "Invalid column name '$column_name'. Please enter a valid name."
                 else
                     clear
                     echo "Displaying data from column '$column_name':"
-                    awk -F ':' -v col="$column_index" '{print $col}' "$data_file"
+                    awk -F ':' -v col=$((column_index + 1)) '{print $col}' "$data_file"
                 fi
                 break
                 ;;
@@ -83,7 +81,7 @@ select_from_table() {
                 clear
                 echo -e "\nAll data in table '$table_name':"
                 if [ -s "$data_file" ]; then
-                    cat "$data_file" | column -t -s ":"
+                    column -t -s ":" "$data_file"
                 else
                     echo "No data available in table '$table_name'."
                 fi
