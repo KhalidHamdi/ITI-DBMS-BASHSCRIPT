@@ -70,14 +70,16 @@ delete_from_table() {
                         pk_column_num=$(awk -F ':' '$3 == "y" {print NR; exit}' "$metadata_path")
 
                         if [ -z "$pk_column_num" ]; then
-                            echo "Primary key column not found. Operation cannot proceed."
+                            echo "Primary key column not found in metadata. Operation cannot proceed."
                             read -n 1 -s -r -p "Press any key to go back..."
                             clear
                             continue
                         fi
 
+                        # Filter out the row with matching primary key
                         awk -v pk="$pk" -F ':' '$1 != pk' "$data_path" > temp.txt
 
+                        # Ensure temp.txt exists before moving it
                         if [ -f temp.txt ]; then
                             mv temp.txt "$data_path"
                             clear
@@ -133,6 +135,7 @@ delete_from_table() {
                     fi
                 fi
 
+                # Delete the column from the data file
                 awk -F ':' -v col="$column_number" '{
                     for (i = 1; i <= NF; i++) {
                         if (i != col) {
@@ -151,12 +154,13 @@ delete_from_table() {
                     continue
                 fi
 
+                # Delete the column from the metadata file
                 awk -F ':' -v col_name="$column_name" '$1 != col_name' "$metadata_path" > temp_file
 
                 if [ -f temp_file ]; then
                     mv temp_file "$metadata_path"
                     clear
-                    echo "Column '$column_name' has been deleted."
+                    echo "Column '$column_name' has been deleted from both data and metadata files."
                 else
                     echo "Error while processing metadata deletion."
                 fi

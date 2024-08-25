@@ -1,7 +1,6 @@
 #!/bin/bash
 
 insert_into_table() {
-    # Loop until a valid table name is provided or user exits
     while true; do
         read -r -p "Enter table name (or type 'exit' to cancel): " table_name
         
@@ -12,7 +11,6 @@ insert_into_table() {
             return
         fi
         
-        # Table name validation: non-empty, starts with letter, only letters, numbers, underscores
         if [[ -z "$table_name" ]]; then
             echo "Table name cannot be empty. Please try again or type 'exit' to cancel."
         elif [[ ! "$table_name" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]; then
@@ -20,7 +18,6 @@ insert_into_table() {
         else
             table_path="$CURRENT_DB/$table_name"
             
-            # Check if the table directory exists
             if [[ ! -d "$table_path" ]]; then
                 echo "Table '$table_name' does not exist in the current database. Please try again or type 'exit' to cancel."
             else
@@ -29,16 +26,13 @@ insert_into_table() {
         fi
     done
 
-    # Paths to the metadata and data files
     metadata_file="$table_path/metadata.txt"
     data_file="$table_path/data.txt"
 
-    # Column types and primary key column storage
     declare -A column_types
     declare -a column_order
     primary_key_column=""
 
-    # Check if the metadata file exists and load column info
     if [[ -f "$metadata_file" ]]; then
         while IFS=: read -r column_name column_type is_primary_key; do
             column_types["$column_name"]="$column_type"
@@ -56,7 +50,6 @@ insert_into_table() {
         return
     fi
 
-    # Ensure a primary key is defined in the table
     if [[ -z "$primary_key_column" ]]; then
         echo "No primary key defined for table '$table_name'."
         echo "Press any key to go back to the tables menu..."
@@ -69,7 +62,6 @@ insert_into_table() {
     # Start inserting rows
     while true; do
         declare -A new_row
-        # Loop over each column to collect values
         for column in "${column_order[@]}"; do
             while true; do
                 read -r -p "Enter value for $column (${column_types[$column]}): " value
@@ -79,7 +71,6 @@ insert_into_table() {
                     continue
                 fi
 
-                # Validation for integer columns
                 if [[ "${column_types[$column]}" == "integer" ]]; then
                     if ! [[ "$value" =~ ^[0-9]+$ ]]; then
                         echo "Invalid value. $column must be an integer. Please try again."
@@ -87,7 +78,6 @@ insert_into_table() {
                         new_row["$column"]="$value"
                         break
                     fi
-                # Validation for string columns (can adjust regex for flexibility)
                 elif [[ "${column_types[$column]}" == "string" ]]; then
                     if [[ ! "$value" =~ ^[a-zA-Z][a-zA-Z0-9_]*$ ]]; then
                         echo "Invalid value. $column must be a valid string. Please try again."
@@ -137,17 +127,15 @@ insert_into_table() {
             done
         done
 
-        # Format the row data and write to the data file
         row_data=""
         for column in "${column_order[@]}"; do
             row_data+="${new_row[$column]}:"
         done
-        row_data=${row_data%:}  # Remove trailing colon
+        row_data=${row_data%:}  
 
         echo "$row_data" >> "$data_file"
         echo "Row inserted successfully into table '$table_name'."
 
-        # Ask the user if they want to insert another row
         while true; do
             read -r -p "Do you want to insert another row? (y/n): " choice
             case "$choice" in
