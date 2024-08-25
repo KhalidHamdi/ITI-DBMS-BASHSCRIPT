@@ -9,22 +9,13 @@ select_from_table() {
             echo "Press any key to go to the tables menu..."
             read -n 1 -s  
             clear
-            . ./tables_menu.sh 
-            exit 0
-        fi
-
-        if [[ "$table_name" =~ [^a-zA-Z0-9_-] ]]; then
-            echo "Invalid table name. Only letters, numbers, underscores, and dashes are allowed. Please try again or type 'exit' to cancel."
-            continue
-        fi
-
-        if [[ -z "$table_name" ]]; then
-            echo "Table name cannot be null. Please try again or type 'exit' to cancel."
-            continue
+            . ./tables_menu.sh
+            return
         fi
 
         table_path="$CURRENT_DB/$table_name"
-        if [[ ! -d "$table_path" ]]; then
+
+        if [[ ! -f "$table_path/data.txt" ]]; then
             echo "Table '$table_name' does not exist. Please try again."
         else
             break
@@ -36,7 +27,12 @@ select_from_table() {
 
     if [[ ! -f "$metadata_file" ]]; then
         echo "Metadata file does not exist for table '$table_name'."
-        exit 1
+        echo "Please check the table name and try again."
+        echo "Press any key to go back to the tables menu..."
+        read -n 1 -s
+        clear
+        . ./tables_menu.sh
+        return
     fi
 
     column_order=()
@@ -44,18 +40,17 @@ select_from_table() {
         column_order+=("$col_name")
     done < "$metadata_file"
 
-while true; do
-    echo "Select an option:"
-    echo "1. Select by row (primary key)"
-    echo "2. Select by column"
-    echo "3. Select all"
-    echo "4. Return to tables menu"  
-    read -r -p "Enter your choice: " choice
+    while true; do
+        echo "Select an option:"
+        echo "1. Select by primary key"
+        echo "2. Select by column"
+        echo "3. Select all"
+        read -r -p "Enter your choice: " choice
 
         case $choice in
             1)
-                echo -n 'Enter the primary key for the record you want to display: '
-                read -r pk
+                read -r -p 'Enter the primary key for the record you want to display: ' pk
+
                 row=$(awk -F ':' -v pk="$pk" '$1 == pk {print}' "$data_file")
 
                 if [ -z "$row" ]; then
@@ -69,17 +64,15 @@ while true; do
                 ;;
 
             2)
-                echo "Enter the column name (${column_order[*]}):"
-                read -r column_name
+                read -r -p "Enter the column name (${column_order[*]}): " column_name
 
-                column_number=$(grep -n "^$column_name:" "$metadata_file" | cut -d: -f1)
-                if [ -z "$column_number" ]; then
+                column_index=$(awk -F ':' -v col="$column_name" 'BEGIN {i=0} $1 == col {print i; exit} {i++}' "$metadata_file")
+                if [[ -z "$column_index" ]]; then
                     echo "Invalid column name '$column_name'. Please enter a valid name."
                 else
-                    column_number=$((column_number))
                     clear
                     echo "Displaying data from column '$column_name':"
-                    awk -F ':' -v col="$column_number" '{print $col}' "$data_file"
+                    awk -F ':' -v col=$((column_index + 1)) '{print $col}' "$data_file"
                 fi
                 break
                 ;;
@@ -88,23 +81,16 @@ while true; do
                 clear
                 echo -e "\nAll data in table '$table_name':"
                 if [ -s "$data_file" ]; then
-                    cat "$data_file" | column -t -s ":"
+                    column -t -s ":" "$data_file"
                 else
-                    clear
                     echo "No data available in table '$table_name'."
                 fi
                 break
                 ;;
 
-            4)
-            clear
-            . ./tables_menu.sh
-            exit 0
-            ;;
-
-        *)
-            echo "Invalid choice '$choice'. Please enter '1', '2', '3', or '4'."
-            ;;
+            *)
+                echo "Invalid choice '$choice'. Please enter '1', '2', or '3'."
+                ;;
         esac
     done
 
@@ -112,6 +98,6 @@ while true; do
     read -n 1 -s
     clear
     . ./tables_menu.sh
-    exit 0
 }
+
 select_from_table

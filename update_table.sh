@@ -26,6 +26,16 @@ update_table() {
         exit 1
     fi
 
+    # Check if the table has data
+    if [[ ! -s "$data_path" ]]; then
+        echo "Table '$table_name' is empty. No rows to update."
+        echo "Press any key to go back to the tables menu..."
+        read -n 1 -s
+        clear
+        . ./tables_menu.sh
+        return
+    fi
+
     while true; do
         read -r -p "Enter the primary key value of the row you want to update (or type 'exit' to cancel): " pk
         if [[ "$pk" == "exit" ]]; then
